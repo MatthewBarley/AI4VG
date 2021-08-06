@@ -8,24 +8,46 @@ public class StealthyAgent : MonoBehaviour
     public GameObject destination;
 
     [SerializeField] [Range(5f, 15f)] private float range = 10f;
+    [SerializeField] [Range(0f, 3f)] private float reactionTime = 1f;
+    
     private FSM fsm;
     private DecisionTree decisionTree;
 
     void Start()
     {
-        FSMState moving = new FSMState();
-        moving.enterActions.Add(MoveToDestination);
-
+        #region FSM
         FSMState idle = new FSMState();
         idle.enterActions.Add(Stop);
+        idle.enterActions.Add(StopDT);
 
-        FSMTransition t1 = new FSMTransition(playerOutOfRange);
-        FSMTransition t2 = new FSMTransition(playerInRange);
+        FSMState moving = new FSMState();
+        moving.enterActions.Add(MoveToDestination);
+        moving.enterActions.Add(StartDT);
 
-        moving.AddTransition(t1, idle);
-        idle.AddTransition(t2, moving);
+        FSMTransition t1 = new FSMTransition(PlayerInRange);
+        FSMTransition t2 = new FSMTransition(PlayerOutOfRange);
 
-        fsm = new FSM(moving);
+        idle.AddTransition(t1, moving);
+        moving.AddTransition(t2, idle);
+
+        fsm = new FSM(idle);
+        #endregion
+
+        #region DT
+        DTDecision d1 = new DTDecision(EnemyVisible);
+        DTDecision d2 = new DTDecision(EnemySpotted);
+        DTDecision d3 = new DTDecision(EnemyHasLOS);
+
+        DTAction a1 = new DTAction(SpotEnemy);
+        DTAction a2 = new DTAction(AvoidEnemy);
+
+        d1.AddLink(true, d2);
+        d2.AddLink(true, d3);
+        d2.AddLink(false, a1);
+        d3.AddLink(true, a2);
+
+        decisionTree = new DecisionTree(d1);
+        #endregion
 
         StartCoroutine(RunFSM());
     }
@@ -49,14 +71,49 @@ public class StealthyAgent : MonoBehaviour
         GetComponent<NavMeshAgent>().destination = transform.position;
     }
 
-    private bool playerInRange()
+    private bool PlayerInRange()
     {
         return (player.transform.position - transform.position).magnitude <= range ? true : false;
     }
 
-    private bool playerOutOfRange()
+    private bool PlayerOutOfRange()
     {
-        return !playerInRange();
+        return !PlayerInRange();
+    }
+
+    private object EnemyVisible(object o)
+    {
+        return null;
+    }
+
+    private object EnemySpotted(object o)
+    {
+        return null;
+    }
+
+    private object EnemyHasLOS(object o)
+    {
+        return null;
+    }
+
+    private object SpotEnemy(object o)
+    {
+        return null;
+    }
+
+    private object AvoidEnemy(object o)
+    {
+        return null;
+    }
+
+    private void StartDT()
+    {
+        StartCoroutine(RunDT());
+    }
+
+    private void StopDT()
+    {
+        StopCoroutine(RunDT());
     }
 
     IEnumerator RunFSM()
@@ -64,6 +121,15 @@ public class StealthyAgent : MonoBehaviour
         while (true)
         {
             fsm.Update();
+            yield return new WaitForSeconds(reactionTime);
+        }
+    }
+
+    IEnumerator RunDT()
+    {
+        while (true)
+        {
+            decisionTree.walk();
             yield return null;
         }
     }
