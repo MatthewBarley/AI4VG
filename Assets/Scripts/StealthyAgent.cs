@@ -7,8 +7,10 @@ public class StealthyAgent : MonoBehaviour
     public GameObject player;
     public GameObject destination;
 
-    [SerializeField] [Range(5f, 15f)] private float range = 10f;
+    [SerializeField] [Range(5f, 15f)] private float playerRange = 10f;
     [SerializeField] [Range(0f, 3f)] private float reactionTime = 1f;
+    [SerializeField] private float sightDistance = 10f;
+    [SerializeField] private float sightAngle = 45f;
     
     private FSM fsm;
     private DecisionTree decisionTree;
@@ -17,11 +19,11 @@ public class StealthyAgent : MonoBehaviour
     {
         #region FSM
         FSMState idle = new FSMState();
-        idle.enterActions.Add(Stop);
+        idle.enterActions.Add(StopMoving);
         idle.enterActions.Add(StopDT);
 
         FSMState moving = new FSMState();
-        moving.enterActions.Add(MoveToDestination);
+        moving.enterActions.Add(StartMoving);
         moving.enterActions.Add(StartDT);
 
         FSMTransition t1 = new FSMTransition(PlayerInRange);
@@ -49,6 +51,7 @@ public class StealthyAgent : MonoBehaviour
         decisionTree = new DecisionTree(d1);
         #endregion
 
+        GetComponent<NavMeshAgent>().destination = destination.transform.position;
         StartCoroutine(RunFSM());
     }
 
@@ -57,23 +60,23 @@ public class StealthyAgent : MonoBehaviour
         Transform t = transform.Find("Range");
         if (t != null)
         {
-            t.localScale = new Vector3(range / transform.localScale.x, 1f, range / transform.localScale.z) / 5f;
+            t.localScale = new Vector3(playerRange / transform.localScale.x, 1f, playerRange / transform.localScale.z) / 5f;
         }
     }
 
-    private void MoveToDestination()
+    private void StartMoving()
     {
-        GetComponent<NavMeshAgent>().destination = destination.transform.position;
+        GetComponent<NavMeshAgent>().isStopped = false;
     }
 
-    private void Stop()
+    private void StopMoving()
     {
-        GetComponent<NavMeshAgent>().destination = transform.position;
+        GetComponent<NavMeshAgent>().isStopped = true;
     }
 
     private bool PlayerInRange()
     {
-        return (player.transform.position - transform.position).magnitude <= range ? true : false;
+        return (player.transform.position - transform.position).magnitude <= playerRange ? true : false;
     }
 
     private bool PlayerOutOfRange()
@@ -83,6 +86,10 @@ public class StealthyAgent : MonoBehaviour
 
     private object EnemyVisible(object o)
     {
+        RaycastHit hitInfo;
+        Physics.SphereCast(transform.position, 1f, transform.forward, out hitInfo, sightDistance);
+        if (hitInfo.collider.CompareTag("Enemy"))
+            Debug.Log("Naples");
         return null;
     }
 
