@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -7,11 +8,12 @@ public class StealthyAgent : MonoBehaviour
     public GameObject player;
     public GameObject destination;
 
-    [SerializeField] [Range(5f, 15f)] private float playerRange = 10f;
     [SerializeField] [Range(0f, 3f)] private float reactionTime = 1f;
-    [SerializeField] private float sightDistance = 10f;
+    [SerializeField] [Range(5f, 15f)] private float sensingRange = 10f;
     [SerializeField] private float sightAngle = 45f;
-    
+
+    private List<StaticEnemy> nearbyEnemies = null;
+
     private FSM fsm;
     private DecisionTree decisionTree;
 
@@ -36,17 +38,17 @@ public class StealthyAgent : MonoBehaviour
         #endregion
 
         #region DT
-        DTDecision d1 = new DTDecision(EnemyVisible);
+        DTDecision d1 = new DTDecision(EnemyInRange);
         DTDecision d2 = new DTDecision(EnemySpotted);
-        DTDecision d3 = new DTDecision(EnemyHasLOS);
-
+        DTDecision d3 = new DTDecision(EnemyVisible);
+       
         DTAction a1 = new DTAction(SpotEnemy);
         DTAction a2 = new DTAction(AvoidEnemy);
 
         d1.AddLink(true, d2);
-        d2.AddLink(true, d3);
-        d2.AddLink(false, a1);
-        d3.AddLink(true, a2);
+        d2.AddLink(true, a2);
+        d2.AddLink(false, d3);
+        d3.AddLink(true, a1);
 
         decisionTree = new DecisionTree(d1);
         #endregion
@@ -57,10 +59,10 @@ public class StealthyAgent : MonoBehaviour
 
     private void OnValidate()
     {
-        Transform t = transform.Find("Range");
+        Transform t = transform.Find("SensingRange");
         if (t != null)
         {
-            t.localScale = new Vector3(playerRange / transform.localScale.x, 1f, playerRange / transform.localScale.z) / 5f;
+            t.localScale = new Vector3(sensingRange / transform.localScale.x, 1f, sensingRange / transform.localScale.z) / 5f;
         }
     }
 
@@ -76,7 +78,7 @@ public class StealthyAgent : MonoBehaviour
 
     private bool PlayerInRange()
     {
-        return (player.transform.position - transform.position).magnitude <= playerRange ? true : false;
+        return (player.transform.position - transform.position).magnitude <= sensingRange ? true : false;
     }
 
     private bool PlayerOutOfRange()
@@ -84,22 +86,38 @@ public class StealthyAgent : MonoBehaviour
         return !PlayerInRange();
     }
 
-    private object EnemyVisible(object o)
+    private object EnemyInRange(object o)
     {
-        RaycastHit hitInfo;
-        Physics.SphereCast(transform.position, 1f, transform.forward, out hitInfo, sightDistance);
-        if (hitInfo.collider.CompareTag("Enemy"))
-            Debug.Log("Naples");
-        return null;
+        bool enemyFound = false;
+        StaticEnemy enemy;
+        nearbyEnemies.Clear();
+        foreach (GameObject go in GameObject.FindGameObjectsWithTag("Enemy"))
+        {
+            enemy = go.gameObject.GetComponent<StaticEnemy>();
+            if (!nearbyEnemies.Contains(enemy))
+                nearbyEnemies.Add(enemy);
+            if ((go.transform.position - transform.position).magnitude <= sensingRange)
+                enemyFound = true;
+        }
+        if (enemyFound == true) return true;
+        return false;
     }
 
     private object EnemySpotted(object o)
     {
-        return null;
+        for (int i=0; i<nearbyEnemies.Count; i++)
+        {
+            if (nearbyEnemies[i].isSpotted == true) return true;
+        }
+        return false;
     }
 
-    private object EnemyHasLOS(object o)
+    private object EnemyVisible(object o)
     {
+        RaycastHit hitInfo;
+        Physics.SphereCast(transform.position, 1f, transform.forward, out hitInfo);
+        if (hitInfo.transform.gameObject.tag == "Enemy")
+            Debug.Log("Enemy visible");
         return null;
     }
 

@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 1437155036541054928}
   - component: {fileID: 1437155036541054931}
   - component: {fileID: -9076200620693631856}
-  - component: {fileID: 7846206979584480307}
   - component: {fileID: -2241899862023122036}
   m_Layer: 0
   m_Name: Enemy
@@ -116,22 +115,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!208 &7846206979584480307
-NavMeshObstacle:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1437155036541054930}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Shape: 0
-  m_Extents: {x: 0.5, y: 1, z: 0.5}
-  m_MoveThreshold: 0.1
-  m_Carve: 1
-  m_CarveOnlyStationary: 1
-  m_Center: {x: 0, y: 0, z: 0}
-  m_TimeToStationary: 0.5
 --- !u!114 &-2241899862023122036
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -159,7 +142,7 @@ GameObject:
   - component: {fileID: 1437155037819141807}
   m_Layer: 0
   m_Name: FieldOfView
-  m_TagString: Enemy
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
