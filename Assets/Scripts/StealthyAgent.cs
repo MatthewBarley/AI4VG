@@ -9,17 +9,18 @@ public class StealthyAgent : MonoBehaviour
     public GameObject destination;
 
     [SerializeField] [Range(0f, 3f)] private float reactionTime = 1f;
-    [SerializeField] [Range(5f, 15f)] private float sensingRange = 10f;
+    [SerializeField] [Range(5f, 15f)] private float sensingRange = 10f; //For both player and enemy detection
     [SerializeField] private float sightAngle = 45f;
 
-    private List<StaticEnemy> nearbyEnemies = null;
+    private List<StaticEnemy> nearbyEnemies = new List<StaticEnemy>();
+    private List<StaticEnemy> visibleEnemies = new List<StaticEnemy>();
 
     private FSM fsm;
     private DecisionTree decisionTree;
 
     void Start()
     {
-        #region FSM
+        //FSM setup
         FSMState idle = new FSMState();
         idle.enterActions.Add(StopMoving);
         idle.enterActions.Add(StopDT);
@@ -35,9 +36,8 @@ public class StealthyAgent : MonoBehaviour
         moving.AddTransition(t2, idle);
 
         fsm = new FSM(idle);
-        #endregion
 
-        #region DT
+        //DT setup
         DTDecision d1 = new DTDecision(EnemyInRange);
         DTDecision d2 = new DTDecision(EnemySpotted);
         DTDecision d3 = new DTDecision(EnemyVisible);
@@ -51,7 +51,6 @@ public class StealthyAgent : MonoBehaviour
         d3.AddLink(true, a1);
 
         decisionTree = new DecisionTree(d1);
-        #endregion
 
         GetComponent<NavMeshAgent>().destination = destination.transform.position;
         StartCoroutine(RunFSM());
@@ -62,7 +61,9 @@ public class StealthyAgent : MonoBehaviour
         Transform t = transform.Find("SensingRange");
         if (t != null)
         {
-            t.localScale = new Vector3(sensingRange / transform.localScale.x, 1f, sensingRange / transform.localScale.z) / 5f;
+            t.localScale = new Vector3(sensingRange / transform.localScale.x,
+                1f, sensingRange / transform.localScale.z) / 5f;
+            t.localPosition = new Vector3(t.localPosition.x, t.localPosition.y, sensingRange / 2f);
         }
     }
 
@@ -76,9 +77,11 @@ public class StealthyAgent : MonoBehaviour
         GetComponent<NavMeshAgent>().isStopped = true;
     }
 
+    //Player detection
     private bool PlayerInRange()
     {
-        return (player.transform.position - transform.position).magnitude <= sensingRange ? true : false;
+        Transform t = transform.Find("SensingRange");
+        return (player.transform.position - t.position).magnitude <= sensingRange ? true : false;
     }
 
     private bool PlayerOutOfRange()
@@ -86,48 +89,134 @@ public class StealthyAgent : MonoBehaviour
         return !PlayerInRange();
     }
 
+    //Enemy detection
     private object EnemyInRange(object o)
     {
         bool enemyFound = false;
         StaticEnemy enemy;
+        Collider c = transform.Find("SensingRange").GetComponent<Collider>();
         nearbyEnemies.Clear();
+
+        //Check if there are nearby enemies (including their field of view)
         foreach (GameObject go in GameObject.FindGameObjectsWithTag("Enemy"))
         {
-            enemy = go.gameObject.GetComponent<StaticEnemy>();
-            if (!nearbyEnemies.Contains(enemy))
-                nearbyEnemies.Add(enemy);
-            if ((go.transform.position - transform.position).magnitude <= sensingRange)
-                enemyFound = true;
+            if (c.bounds.Intersects(go.gameObject.GetComponent<Collider>().bounds))
+            {
+                if (enemyFound == false)
+                    enemyFound = true;
+
+                enemy = go.gameObject.GetComponentInParent<StaticEnemy>();
+                if (!nearbyEnemies.Contains(enemy))
+                    nearbyEnemies.Add(enemy);
+            }
         }
+
+        Debug.Log("EnemyInRange:" + nearbyEnemies.Count.ToString());
         if (enemyFound == true) return true;
         return false;
     }
 
     private object EnemySpotted(object o)
-    {
-        for (int i=0; i<nearbyEnemies.Count; i++)
+    { 
+        if (nearbyEnemies.Count > 0)
         {
-            if (nearbyEnemies[i].isSpotted == true) return true;
+            for (int i = 0; i < nearbyEnemies.Count; i++)
+            {
+                if (nearbyEnemies[i].isSpotted == true) return true;
+            }
         }
         return false;
     }
 
     private object EnemyVisible(object o)
     {
-        RaycastHit hitInfo;
-        Physics.SphereCast(transform.position, 1f, transform.forward, out hitInfo);
-        if (hitInfo.transform.gameObject.tag == "Enemy")
-            Debug.Log("Enemy visible");
-        return null;
+        bool enemyVisible = false;
+        StaticEnemy enemy;
+        RaycastHit[] leftHits;
+        RaycastHit[] centerHits;
+        RaycastHit[] rightHits;
+        Vector3 sphereCastPosition = new Vector3(transform.position.x, 0.5f, transform.position.z);
+        leftHits = Physics.SphereCastAll(sphereCastPosition, 0.5f,
+            Quaternion.Euler(0, -sightAngle, 0) * transform.forward);
+        centerHits = Physics.SphereCastAll(sphereCastPosition, 0.5f, transform.forward);
+        rightHits = Physics.SphereCastAll(sphereCastPosition, 0.5f,
+            Quaternion.Euler(0, sightAngle, 0) * transform.forward);
+        visibleEnemies.Clear();
+
+        //Raycast debug
+        Vector3 v = transform.TransformDirection(transform.forward) * 30;
+        Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, -sightAngle, 0) * v, Color.red, 60f);
+        Debug.DrawRay(sphereCastPosition, v, Color.red, 60f);
+        Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, sightAngle, 0) * v, Color.red, 60f);
+
+        //Check if there are visible enemies (including their field of view)
+        if (leftHits.Length > 0)
+        {
+            for (int i=0; i<leftHits.Length; i++)
+            {
+                if (leftHits[i].collider.gameObject.tag == "Enemy")
+                {
+                    if (enemyVisible == false)
+                        enemyVisible = true;
+                    
+                    enemy = leftHits[i].collider.gameObject.GetComponentInParent<StaticEnemy>();
+                    if (!visibleEnemies.Contains(enemy))
+                        visibleEnemies.Add(enemy);
+                }
+            }
+        }
+        if (centerHits.Length > 0)
+        {
+            for (int i = 0; i < centerHits.Length; i++)
+            {
+                if (centerHits[i].collider.gameObject.tag == "Enemy")
+                {
+                    if (enemyVisible == false)
+                        enemyVisible = true;
+
+                    enemy = centerHits[i].collider.gameObject.GetComponentInParent<StaticEnemy>();
+                    if (!visibleEnemies.Contains(enemy))
+                        visibleEnemies.Add(enemy);
+                }
+            }
+        }
+        if (rightHits.Length > 0)
+        {
+            for (int i = 0; i < rightHits.Length; i++)
+            {
+                if (rightHits[i].collider.gameObject.tag == "Enemy")
+                {
+                    if (enemyVisible == false)
+                        enemyVisible = true;
+
+                    enemy = rightHits[i].collider.gameObject.GetComponentInParent<StaticEnemy>();
+                    if (!visibleEnemies.Contains(enemy))
+                        visibleEnemies.Add(enemy);
+                }
+            }
+        }
+
+        Debug.Log("EnemyVisible:" + visibleEnemies.Count.ToString());
+        if (enemyVisible == true) return true;
+        return false;
     }
 
     private object SpotEnemy(object o)
     {
+        if (visibleEnemies.Count > 0)
+        {
+            for (int i = 0; i < visibleEnemies.Count; i++)
+            {
+                if (visibleEnemies[i].isSpotted == false)
+                    visibleEnemies[i].isSpotted = true;
+            }
+        }
         return null;
     }
 
     private object AvoidEnemy(object o)
     {
+        Debug.Log("AvoidEnemy");
         return null;
     }
 

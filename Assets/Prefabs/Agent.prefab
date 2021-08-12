@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6058981687325224699}
   - component: {fileID: 6058981687325224696}
   - component: {fileID: 6058981687325224697}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Direction
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -110,7 +110,7 @@ GameObject:
   - component: {fileID: 6058981688188271071}
   - component: {fileID: -5345552591113432893}
   - component: {fileID: 3046003197302446409}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Agent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -232,9 +232,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 0}
   destination: {fileID: 0}
-  playerRange: 10
   reactionTime: 1
-  sightDistance: 10
+  sensingRange: 10
   sightAngle: 45
 --- !u!1 &9221215339552996527
 GameObject:
@@ -248,7 +247,7 @@ GameObject:
   - component: {fileID: 606079913215699678}
   - component: {fileID: 4293255950993259570}
   - component: {fileID: 3545373773682442251}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: SensingRange
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -263,7 +262,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9221215339552996527}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.99, z: 0}
+  m_LocalPosition: {x: 0, y: -0.99, z: 5}
   m_LocalScale: {x: 2, y: 0.2, z: 2}
   m_Children: []
   m_Father: {fileID: 6058981688188271056}
@@ -327,7 +326,7 @@ MeshCollider:
   m_GameObject: {fileID: 9221215339552996527}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 4
   m_Convex: 0
   m_CookingOptions: 30
