@@ -113,6 +113,7 @@ public class StealthyAgent : MonoBehaviour
                     enemyFound = true;
 
                 enemy = go.gameObject.GetComponentInParent<StaticEnemy>();
+
                 if (!nearbyEnemies.Contains(enemy))
                     nearbyEnemies.Add(enemy);
             }
@@ -169,11 +170,13 @@ public class StealthyAgent : MonoBehaviour
                         enemyVisible = true;
 
                     enemy = leftHits[i].collider.gameObject.GetComponentInParent<StaticEnemy>();
+
                     if (!visibleEnemies.Contains(enemy))
                         visibleEnemies.Add(enemy);
                 }
             }
         }
+
         if (centerHits.Length > 0)
         {
             for (int i = 0; i < centerHits.Length; i++)
@@ -184,11 +187,13 @@ public class StealthyAgent : MonoBehaviour
                         enemyVisible = true;
 
                     enemy = centerHits[i].collider.gameObject.GetComponentInParent<StaticEnemy>();
+
                     if (!visibleEnemies.Contains(enemy))
                         visibleEnemies.Add(enemy);
                 }
             }
         }
+
         if (rightHits.Length > 0)
         {
             for (int i = 0; i < rightHits.Length; i++)
@@ -199,11 +204,13 @@ public class StealthyAgent : MonoBehaviour
                         enemyVisible = true;
 
                     enemy = rightHits[i].collider.gameObject.GetComponentInParent<StaticEnemy>();
+
                     if (!visibleEnemies.Contains(enemy))
                         visibleEnemies.Add(enemy);
                 }
             }
         }
+
         Debug.Log("EnemyVisible:" + visibleEnemies.Count.ToString());
 
         if (enemyVisible == true) return true;
@@ -225,6 +232,7 @@ public class StealthyAgent : MonoBehaviour
 
     private object AvoidEnemy(object o)
     {
+        //Go directly to destination if it is very close
         if ((destination.transform.position - transform.position).magnitude < sensingRange / 2f)
             agent.destination = destination.transform.position;
         else
@@ -258,31 +266,31 @@ public class StealthyAgent : MonoBehaviour
 
                 if (!leftHit && centerHit && rightHit)
                 {
-                    agent.destination = transform.position + left * sensingRange;
+                    agent.destination = transform.position + left * sensingRange / 2f;
                     Debug.Log("Left");
                 }
 
                 if (!leftHit && !centerHit && rightHit)
                 {
-                    agent.destination = transform.position + transform.forward * sensingRange;
+                    agent.destination = transform.position + transform.forward * sensingRange / 2f;
                     Debug.Log("Left Center");
                 }
 
                 if (!leftHit && centerHit && !rightHit)
                 {
-                    agent.destination = transform.position + transform.forward * sensingRange;
+                    agent.destination = transform.position + transform.forward * sensingRange / 2f;
                     Debug.Log("Center");
                 }
 
                 if (leftHit && !centerHit && !rightHit)
                 {
-                    agent.destination = transform.position + transform.forward * sensingRange;
+                    agent.destination = transform.position + transform.forward * sensingRange / 2f;
                     Debug.Log("Right Center");
                 }
 
                 if (leftHit && centerHit && !rightHit)
                 {
-                    agent.destination = transform.position + right * sensingRange;
+                    agent.destination = transform.position + right * sensingRange / 2f;
                     Debug.Log("Right");
                 }
 
