@@ -19,12 +19,14 @@ public class StealthyAgent : MonoBehaviour
 
     private FSM fsm;
     private DecisionTree decisionTree;
+    private IEnumerator DTCoroutine;
 
     void Start()
     {
         startingSightAngle = sightAngle;
         agent = GetComponent<NavMeshAgent>();
         agent.destination = destination.transform.position;
+        DTCoroutine = RunDT();
 
         //FSM setup
         FSMState idle = new FSMState();
@@ -57,7 +59,6 @@ public class StealthyAgent : MonoBehaviour
         decisionTree = new DecisionTree(d1);
 
         StartCoroutine(RunFSM());
-        StartCoroutine(RunDT());
     }
 
     private void OnValidate()
@@ -73,12 +74,14 @@ public class StealthyAgent : MonoBehaviour
 
     private void StartMoving()
     {
+        StartCoroutine(DTCoroutine);
         agent.isStopped = false;
     }
 
     private void StopMoving()
     {
         agent.isStopped = true;
+        StopCoroutine(DTCoroutine);
     }
 
     //Player detection
@@ -115,8 +118,12 @@ public class StealthyAgent : MonoBehaviour
             }
         }
 
+        //Go to destination if there are not nearby enemies
+        if (!agent.hasPath)
+            agent.destination = destination.transform.position;
+
         Debug.Log("EnemyInRange:" + nearbyEnemies.Count.ToString());
-        
+
         if (enemyFound == true) return true;
         return false;
     }
@@ -197,9 +204,8 @@ public class StealthyAgent : MonoBehaviour
                 }
             }
         }
-
         Debug.Log("EnemyVisible:" + visibleEnemies.Count.ToString());
-        
+
         if (enemyVisible == true) return true;
         return false;
     }
@@ -219,52 +225,73 @@ public class StealthyAgent : MonoBehaviour
 
     private object AvoidEnemy(object o)
     {
-        RaycastHit hit;
-        Vector3 sphereCastPosition = new Vector3(transform.position.x, 0.5f, transform.position.z);
-        bool leftHit = Physics.SphereCast(sphereCastPosition, 0.5f,
-            Quaternion.Euler(0, -sightAngle, 0) * transform.forward, out hit);
-        bool centerHit = Physics.SphereCast(sphereCastPosition, 0.5f, transform.forward, out hit);
-        bool rightHit = Physics.SphereCast(sphereCastPosition, 0.5f,
-            Quaternion.Euler(0, sightAngle, 0) * transform.forward, out hit);
-        Vector3 left = Quaternion.Euler(0, -sightAngle, 0) * transform.forward;
-        Vector3 right = Quaternion.Euler(0, sightAngle, 0) * transform.forward;
-
-        //Raycast debug
-        Vector3 v = transform.TransformDirection(transform.forward) * 30;
-        Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, -sightAngle, 0) * v, Color.red, 3f);
-        Debug.DrawRay(sphereCastPosition, v, Color.red, 3f);
-        Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, sightAngle, 0) * v, Color.red, 3f);
-
-        //Collision avoidance 
-        if (leftHit && centerHit && rightHit)
-        {
-            sightAngle += 5f;
-            AvoidEnemy(o);
-        }
+        if ((destination.transform.position - transform.position).magnitude < sensingRange / 2f)
+            agent.destination = destination.transform.position;
         else
         {
-            if (sightAngle > startingSightAngle)
-                sightAngle = startingSightAngle;
+            RaycastHit hit;
+            Vector3 sphereCastPosition = new Vector3(transform.position.x, 0.5f, transform.position.z);
+            bool leftHit = Physics.SphereCast(sphereCastPosition, 0.5f,
+                Quaternion.Euler(0, -sightAngle, 0) * transform.forward, out hit);
+            bool centerHit = Physics.SphereCast(sphereCastPosition, 0.5f, transform.forward, out hit);
+            bool rightHit = Physics.SphereCast(sphereCastPosition, 0.5f,
+                Quaternion.Euler(0, sightAngle, 0) * transform.forward, out hit);
+            Vector3 left = Quaternion.Euler(0, -sightAngle, 0) * transform.forward;
+            Vector3 right = Quaternion.Euler(0, sightAngle, 0) * transform.forward;
 
-            if (!leftHit && centerHit && rightHit)
+            //Raycast debug
+            Vector3 v = transform.TransformDirection(transform.forward) * 30;
+            Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, -sightAngle, 0) * v, Color.red, 3f);
+            Debug.DrawRay(sphereCastPosition, v, Color.red, 3f);
+            Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, sightAngle, 0) * v, Color.red, 3f);
+
+            //Collision avoidance 
+            if (leftHit && centerHit && rightHit)
             {
-                agent.isStopped = true;
-                agent.Move(left * agent.speed * Time.fixedDeltaTime);
-                Debug.Log("Left");
+                sightAngle += 5f;
+                AvoidEnemy(o);
             }
-
-            if (leftHit && centerHit && !rightHit)
-            {
-                agent.isStopped = true;
-                agent.Move(right * agent.speed * Time.fixedDeltaTime);
-                Debug.Log("Right");
-            }
-
             else
-                agent.isStopped = false;
+            {
+                if (sightAngle > startingSightAngle)
+                    sightAngle = startingSightAngle;
+
+                if (!leftHit && centerHit && rightHit)
+                {
+                    agent.destination = transform.position + left * sensingRange;
+                    Debug.Log("Left");
+                }
+
+                if (!leftHit && !centerHit && rightHit)
+                {
+                    agent.destination = transform.position + transform.forward * sensingRange;
+                    Debug.Log("Left Center");
+                }
+
+                if (!leftHit && centerHit && !rightHit)
+                {
+                    agent.destination = transform.position + transform.forward * sensingRange;
+                    Debug.Log("Center");
+                }
+
+                if (leftHit && !centerHit && !rightHit)
+                {
+                    agent.destination = transform.position + transform.forward * sensingRange;
+                    Debug.Log("Right Center");
+                }
+
+                if (leftHit && centerHit && !rightHit)
+                {
+                    agent.destination = transform.position + right * sensingRange;
+                    Debug.Log("Right");
+                }
+
+                if (!leftHit && !centerHit && !rightHit)
+                {
+                    agent.destination = destination.transform.position;
+                }
+            }
         }
-        
-        Debug.Log("AvoidEnemy");
         return null;
     }
 
