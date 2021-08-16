@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class EnemySpawner : MonoBehaviour
 {
-    public int enemyNumber = 10;
+    [Range(5, 15)] public int enemyNumber = 10;
     public GameObject enemyPrefab;
     public List<Transform> enemySpawnPositions = new List<Transform>();
 

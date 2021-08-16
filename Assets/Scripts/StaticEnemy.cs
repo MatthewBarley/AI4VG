@@ -19,9 +19,14 @@ public class StaticEnemy : MonoBehaviour
             RaycastHit leftHit;
             RaycastHit rightHit;
             bool isLeft = Physics.Raycast(transform.position,
-                Quaternion.Euler(0, -30f, 0) * transform.forward, out leftHit);
+                Quaternion.Euler(0, -30f, 0) * transform.forward, out leftHit, 7.5f);
             bool isRight = Physics.Raycast(transform.position,
-                Quaternion.Euler(0, 30f, 0) * transform.forward, out rightHit);
+                Quaternion.Euler(0, 30f, 0) * transform.forward, out rightHit, 7.5f);
+
+            //Raycast debug
+            Vector3 v = transform.TransformDirection(transform.forward) * 7.5f;
+            Debug.DrawRay(transform.position, Quaternion.Euler(0, -30f, 0) * v, Color.red, 30f);
+            Debug.DrawRay(transform.position, Quaternion.Euler(0, 30f, 0) * v, Color.red, 30f);
 
             if (isLeft)
             {
@@ -47,7 +52,7 @@ public class StaticEnemy : MonoBehaviour
                 Debug.Log("Rotate");
             }
 
-            else
+            if (!isLeft && !isRight)
                 break;
 
             yield return null;
