@@ -147,10 +147,11 @@ public class StealthyAgent : MonoBehaviour
         StaticEnemy enemy;
         Vector3 sphereCastPosition = new Vector3(transform.position.x, agent.radius, transform.position.z);
         RaycastHit[] leftHits = Physics.SphereCastAll(sphereCastPosition, agent.radius,
-            Quaternion.Euler(0, -sightAngle, 0) * transform.forward);
-        RaycastHit[] centerHits = Physics.SphereCastAll(sphereCastPosition, agent.radius, transform.forward);
+            Quaternion.Euler(0, -sightAngle, 0) * transform.forward, sensingRange * 3);
+        RaycastHit[] centerHits = Physics.SphereCastAll(sphereCastPosition, agent.radius,
+            transform.forward, sensingRange * 3);
         RaycastHit[] rightHits = Physics.SphereCastAll(sphereCastPosition, agent.radius,
-            Quaternion.Euler(0, sightAngle, 0) * transform.forward);
+            Quaternion.Euler(0, sightAngle, 0) * transform.forward, sensingRange * 3);
         visibleEnemies.Clear();
 
         //Raycast debug
@@ -277,7 +278,7 @@ public class StealthyAgent : MonoBehaviour
                     Debug.Log("Left Center");
                 }
 
-                if (!leftHit && centerHit && !rightHit)
+                if (leftHit && !centerHit && rightHit)
                 {
                     agent.destination = transform.position + transform.forward * sensingRange / 5f;
                     Debug.Log("Center");
@@ -293,6 +294,20 @@ public class StealthyAgent : MonoBehaviour
                 {
                     agent.destination = transform.position + right * sensingRange / 5f;
                     Debug.Log("Right");
+                }
+
+                if (!leftHit && centerHit && !rightHit)
+                {
+                    Vector3 l = transform.position + left * sensingRange / 5f;
+                    Vector3 r = transform.position + right * sensingRange / 5f;
+                    if ((destination.transform.position - l).magnitude <=
+                        (destination.transform.position - r).magnitude)
+                    {
+                        agent.destination = l;
+                        Debug.Log("Choose Left");
+                    }
+                    agent.destination = r;
+                    Debug.Log("Choose Right");
                 }
 
                 if (!leftHit && !centerHit && !rightHit)
