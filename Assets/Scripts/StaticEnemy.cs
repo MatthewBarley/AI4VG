@@ -24,16 +24,16 @@ public class StaticEnemy : MonoBehaviour
                 Quaternion.Euler(0, 30f, 0) * transform.forward, out rightHit, 7.5f);
 
             //Raycast debug
-            Vector3 v = transform.TransformDirection(transform.forward) * 7.5f;
+            /*Vector3 v = transform.forward * 7.5f;
             Debug.DrawRay(transform.position, Quaternion.Euler(0, -30f, 0) * v, Color.red, 30f);
-            Debug.DrawRay(transform.position, Quaternion.Euler(0, 30f, 0) * v, Color.red, 30f);
+            Debug.DrawRay(transform.position, Quaternion.Euler(0, 30f, 0) * v, Color.red, 30f);*/
 
             if (isLeft)
             {
                 if (leftHit.collider.gameObject.tag == "Obstacle")
                 {
                     transform.Rotate(0, 45f, 0);
-                    Debug.Log("Rotate right");
+                    //Debug.Log("Rotate right");
                 }
             }
 
@@ -42,14 +42,14 @@ public class StaticEnemy : MonoBehaviour
                 if (rightHit.collider.gameObject.tag == "Obstacle")
                 {
                     transform.Rotate(0, -45f, 0);
-                    Debug.Log("Rotate left");
+                    //Debug.Log("Rotate left");
                 }
             }
 
             if (isLeft && isRight)
             {
                 transform.Rotate(0, 90f, 0);
-                Debug.Log("Rotate");
+                //Debug.Log("Rotate");
             }
 
             if (!isLeft && !isRight)

@@ -10,7 +10,7 @@ public class StealthyAgent : MonoBehaviour
 
     [SerializeField] [Range(0, 2f)] private float reactionTime = 1f;
     [SerializeField] [Range(5f, 15f)] private float sensingRange = 10f; //For both player and enemy detection
-    [SerializeField] private float sightAngle = 45f;
+    [SerializeField] [Range(30f, 60f)] private float sightAngle = 45f;
 
     private float startingSightAngle;
     private NavMeshAgent agent;
@@ -155,7 +155,7 @@ public class StealthyAgent : MonoBehaviour
         visibleEnemies.Clear();
 
         //Raycast debug
-        Vector3 v = transform.TransformDirection(transform.forward) * sensingRange * 3;
+        Vector3 v = transform.forward * sensingRange * 3;
         Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, -sightAngle, 0) * v, Color.blue, 5f);
         Debug.DrawRay(sphereCastPosition, v, Color.blue, 5f);
         Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, sightAngle, 0) * v, Color.blue, 5f);
@@ -234,7 +234,7 @@ public class StealthyAgent : MonoBehaviour
     private object AvoidEnemy(object o)
     {
         //Go directly to destination if it is very close
-        if ((destination.transform.position - transform.position).magnitude < sensingRange / 5f)
+        if ((destination.transform.position - transform.position).magnitude <= sensingRange / 5f)
             agent.destination = destination.transform.position;
         else
         {
@@ -250,7 +250,7 @@ public class StealthyAgent : MonoBehaviour
             Vector3 right = Quaternion.Euler(0, sightAngle, 0) * transform.forward;
 
             //Raycast debug
-            Vector3 v = transform.TransformDirection(transform.forward) * sensingRange * 2;
+            Vector3 v = transform.forward * sensingRange * 2;
             Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, -sightAngle, 0) * v, Color.red, 1f);
             Debug.DrawRay(sphereCastPosition, v, Color.red, 1f);
             Debug.DrawRay(sphereCastPosition, Quaternion.Euler(0, sightAngle, 0) * v, Color.red, 1f);
